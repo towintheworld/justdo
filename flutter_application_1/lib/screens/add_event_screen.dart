@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/event.dart';
 
 class AddEventScreen extends StatefulWidget {
@@ -140,39 +141,36 @@ class _AddEventScreenState extends State<AddEventScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
+            CupertinoTextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '计划标题',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.title),
+              placeholder: '计划标题',
+              prefix: const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(CupertinoIcons.textformat, size: 20),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '请输入计划标题';
-                }
-                return null;
-              },
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               autofocus: true,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            CupertinoTextField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: '描述（可选）',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description),
+              placeholder: '描述（可选）',
+              prefix: const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(CupertinoIcons.text_alignleft, size: 20),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            CupertinoTextField(
               controller: _locationController,
-              decoration: const InputDecoration(
-                labelText: '地点（可选）',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
+              placeholder: '地点（可选）',
+              prefix: const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(CupertinoIcons.location, size: 20),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             const SizedBox(height: 16),
             ListTile(

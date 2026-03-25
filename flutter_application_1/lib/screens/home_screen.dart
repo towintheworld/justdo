@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/todo.dart';
 import '../models/course.dart';
 import '../models/event.dart';
@@ -85,6 +86,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _completedCount => _todos.where((todo) => todo.isCompleted).length;
 
+  // 获取逾期的待办任务
+  List<Todo> _getOverdueTodos() {
+    final now = DateTime.now();
+    return _todos.where((todo) {
+      if (todo.isCompleted || todo.endTime == null) return false;
+      return todo.endTime!.isBefore(now);
+    }).toList()..sort((a, b) => a.endTime!.compareTo(b.endTime!));
+  }
+
+  // 获取即将到期的待办任务（60分钟内）
+  List<Todo> _getUpcomingTodos() {
+    final now = DateTime.now();
+    return _todos.where((todo) {
+      if (todo.isCompleted || todo.endTime == null) return false;
+      final difference = todo.endTime!.difference(now);
+      return difference.inMinutes <= 60 && difference.inMinutes > 0;
+    }).toList()..sort((a, b) => a.endTime!.compareTo(b.endTime!));
+  }
+
   // 获取今天的课程
   List<Course> _getTodayCourses() {
     final today = DateTime.now().weekday;
@@ -137,88 +157,198 @@ class _HomeScreenState extends State<HomeScreen> {
     final todayCourses = _getTodayCourses();
     final todayEvents = _getTodayEvents();
     final upcomingEvents = _getUpcomingEvents();
+    final overdueTodos = _getOverdueTodos();
+    final upcomingTodos = _getUpcomingTodos();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('待办事项'), centerTitle: true),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 今日课程卡片
-          if (todayCourses.isNotEmpty) ...[
-            _buildSectionHeader('今日课程', Icons.book, Colors.blue),
-            const SizedBox(height: 8),
-            ...todayCourses.map((course) => _buildCourseCard(course)),
-            const SizedBox(height: 16),
-          ],
-
-          // 今日计划卡片
-          if (todayEvents.isNotEmpty) ...[
-            _buildSectionHeader('今日计划', Icons.event, Colors.orange),
-            const SizedBox(height: 8),
-            ...todayEvents.map((event) => _buildEventCard(event)),
-            const SizedBox(height: 16),
-          ],
-
-          // 近期计划卡片
-          if (upcomingEvents.where((e) => !e.isToday).isNotEmpty) ...[
-            _buildSectionHeader('近期计划', Icons.upcoming, Colors.green),
-            const SizedBox(height: 8),
-            ...upcomingEvents
-                .where((e) => !e.isToday)
-                .take(5)
-                .map((event) => _buildEventCard(event)),
-            const SizedBox(height: 16),
-          ],
-
-          // 待办事项
-          _buildSectionHeader('待办事项', Icons.check_circle, Colors.purple),
-          const SizedBox(height: 8),
-          if (_todos.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '已完成 $_completedCount / ${_todos.length}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 8),
-          if (_todos.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text('暂无待办事项', style: TextStyle(color: Colors.grey)),
-              ),
-            )
-          else
-            ..._todos.asMap().entries.map((entry) {
-              return TodoItem(
-                todo: entry.value,
-                onToggle: () => _toggleTodo(entry.key),
-                onDelete: () => _deleteTodo(entry.key),
-                onTap: () => _navigateToMindMap(entry.value),
-              );
-            }),
-          const SizedBox(height: 80),
-        ],
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('待办事项'),
+        trailing: GestureDetector(
+          onTap: _addTodo,
+          child: const Icon(CupertinoIcons.add),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTodo,
-        child: const Icon(Icons.add),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // 逾期待办
+            if (overdueTodos.isNotEmpty) ...[
+              _buildSectionHeader(
+                '逾期待办',
+                CupertinoIcons.exclamationmark_triangle,
+                Colors.red,
+              ),
+              const SizedBox(height: 8),
+              ...overdueTodos.map(
+                (todo) => TodoItem(
+                  todo: todo,
+                  onToggle: () {
+                    setState(() {
+                      todo.toggleComplete();
+                    });
+                  },
+                  onDelete: () {
+                    setState(() {
+                      _todos.remove(todo);
+                    });
+                  },
+                  onSettings: () {
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (context) => CupertinoAlertDialog(
+                        title: const Text('提示'),
+                        content: const Text('设置功能待实现'),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('确定'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onTap: () => _navigateToMindMap(todo),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 即将到期待办（60分钟内）
+            if (upcomingTodos.isNotEmpty) ...[
+              _buildSectionHeader('即将到期', CupertinoIcons.timer, Colors.orange),
+              const SizedBox(height: 8),
+              ...upcomingTodos.map(
+                (todo) => TodoItem(
+                  todo: todo,
+                  onToggle: () {
+                    setState(() {
+                      todo.toggleComplete();
+                    });
+                  },
+                  onDelete: () {
+                    setState(() {
+                      _todos.remove(todo);
+                    });
+                  },
+                  onSettings: () {
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (context) => CupertinoAlertDialog(
+                        title: const Text('提示'),
+                        content: const Text('设置功能待实现'),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('确定'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onTap: () => _navigateToMindMap(todo),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 今日课程卡片
+            if (todayCourses.isNotEmpty) ...[
+              _buildSectionHeader('今日课程', CupertinoIcons.book, Colors.blue),
+              const SizedBox(height: 8),
+              ...todayCourses.map((course) => _buildCourseCard(course)),
+              const SizedBox(height: 16),
+            ],
+
+            // 今日计划卡片
+            if (todayEvents.isNotEmpty) ...[
+              _buildSectionHeader(
+                '今日计划',
+                CupertinoIcons.calendar,
+                Colors.orange,
+              ),
+              const SizedBox(height: 8),
+              ...todayEvents.map((event) => _buildEventCard(event)),
+              const SizedBox(height: 16),
+            ],
+
+            // 近期计划卡片
+            if (upcomingEvents.where((e) => !e.isToday).isNotEmpty) ...[
+              _buildSectionHeader('近期计划', CupertinoIcons.clock, Colors.green),
+              const SizedBox(height: 8),
+              ...upcomingEvents
+                  .where((e) => !e.isToday)
+                  .take(5)
+                  .map((event) => _buildEventCard(event)),
+              const SizedBox(height: 16),
+            ],
+
+            // 待办事项
+            _buildSectionHeader(
+              '待办事项',
+              CupertinoIcons.check_mark_circled,
+              Colors.purple,
+            ),
+            const SizedBox(height: 8),
+            if (_todos.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey6,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '已完成 $_completedCount / ${_todos.length}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            if (_todos.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey6,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Text(
+                    '暂无待办事项',
+                    style: TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                ),
+              )
+            else
+              ..._todos.asMap().entries.map((entry) {
+                return TodoItem(
+                  todo: entry.value,
+                  onToggle: () => _toggleTodo(entry.key),
+                  onDelete: () => _deleteTodo(entry.key),
+                  onSettings: () {
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (context) => CupertinoAlertDialog(
+                        title: const Text('提示'),
+                        content: const Text('设置功能待实现'),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('确定'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onTap: () => _navigateToMindMap(entry.value),
+                );
+              }),
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'home_screen.dart';
 import 'schedule_screen.dart';
 import 'calendar_screen.dart';
+import 'profile_screen.dart';
 import 'settings_screen.dart';
 import '../models/schedule_settings.dart';
 import '../models/course.dart';
@@ -80,56 +82,82 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          HomeScreen(
-            courses: _courses,
-            events: _events,
-            currentWeek: 1, // 默认第1周，可后续优化
-            onEventComplete: _toggleEventComplete,
-          ),
-          ScheduleScreen(
-            settings: _settings,
-            onSettingsPressed: _openSettings,
-            courses: _courses,
-            onAddCourse: _addCourse,
-            onRemoveCourse: _removeCourse,
-          ),
-          CalendarScreen(
-            events: _events,
-            onAddEvent: _addEvent,
-            onRemoveEvent: _removeEvent,
-            onToggleComplete: _toggleEventComplete,
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+    return CupertinoTabScaffold(
+      tabBar: CupertinoTabBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.check_circle_outline),
-            selectedIcon: Icon(Icons.check_circle),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.check_mark_circled),
+            activeIcon: Icon(CupertinoIcons.check_mark_circled_solid),
             label: '待办',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.calendar),
+            activeIcon: Icon(CupertinoIcons.calendar_today),
             label: '课表',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.event_outlined),
-            selectedIcon: Icon(Icons.event),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.clock),
+            activeIcon: Icon(CupertinoIcons.clock_solid),
             label: '日历',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.person),
+            activeIcon: Icon(CupertinoIcons.person_solid),
+            label: '我的',
           ),
         ],
       ),
+      tabBuilder: (context, index) {
+        switch (index) {
+          case 0:
+            return CupertinoTabView(
+              builder: (context) => HomeScreen(
+                courses: _courses,
+                events: _events,
+                currentWeek: 1,
+                onEventComplete: _toggleEventComplete,
+              ),
+            );
+          case 1:
+            return CupertinoTabView(
+              builder: (context) => ScheduleScreen(
+                settings: _settings,
+                onSettingsPressed: _openSettings,
+                courses: _courses,
+                onAddCourse: _addCourse,
+                onRemoveCourse: _removeCourse,
+              ),
+            );
+          case 2:
+            return CupertinoTabView(
+              builder: (context) => CalendarScreen(
+                events: _events,
+                onAddEvent: _addEvent,
+                onRemoveEvent: _removeEvent,
+                onToggleComplete: _toggleEventComplete,
+              ),
+            );
+          case 3:
+            return CupertinoTabView(
+              builder: (context) => const ProfileScreen(),
+            );
+          default:
+            return CupertinoTabView(
+              builder: (context) => HomeScreen(
+                courses: _courses,
+                events: _events,
+                currentWeek: 1,
+                onEventComplete: _toggleEventComplete,
+              ),
+            );
+        }
+      },
     );
   }
 }

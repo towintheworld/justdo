@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/schedule_settings.dart';
 import '../models/time_table.dart';
 
@@ -165,16 +166,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             title: const Text('每日节数'),
             subtitle: Text('${_settings.totalSections}节'),
-            trailing: DropdownButton<int>(
-              value: _settings.totalSections,
-              items: [8, 10, 12].map((e) {
-                return DropdownMenuItem(value: e, child: Text('$e节'));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _settings = _settings.copyWith(totalSections: value);
-                });
-              },
+            trailing: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: CupertinoColors.systemGrey4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _settings.totalSections,
+                  items: [8, 10, 12].map((e) {
+                    return DropdownMenuItem(value: e, child: Text('$e节'));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _settings = _settings.copyWith(totalSections: value);
+                    });
+                  },
+                ),
+              ),
             ),
           ),
           SwitchListTile(
