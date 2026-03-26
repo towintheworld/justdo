@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../widgets/todo_item.dart';
 import 'add_todo_screen.dart';
 import 'todo_mind_map_screen.dart';
+import 'focus_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<Course> courses;
@@ -27,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Todo> _todos = [];
+  bool _showCompleted = false;
 
   void _addTodo() async {
     final result = await Navigator.push<Todo>(
@@ -84,8 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  int get _completedCount => _todos.where((todo) => todo.isCompleted).length;
-
   // 获取逾期的待办任务
   List<Todo> _getOverdueTodos() {
     final now = DateTime.now();
@@ -103,6 +103,16 @@ class _HomeScreenState extends State<HomeScreen> {
       final difference = todo.endTime!.difference(now);
       return difference.inMinutes <= 60 && difference.inMinutes > 0;
     }).toList()..sort((a, b) => a.endTime!.compareTo(b.endTime!));
+  }
+
+  // 获取未完成的待办任务
+  List<Todo> _getPendingTodos() {
+    return _todos.where((todo) => !todo.isCompleted).toList();
+  }
+
+  // 获取已完成的待办任务
+  List<Todo> _getCompletedTodos() {
+    return _todos.where((todo) => todo.isCompleted).toList();
   }
 
   // 获取今天的课程
@@ -194,17 +204,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     });
                   },
                   onSettings: () {
-                    showCupertinoDialog(
-                      context: context,
-                      builder: (context) => CupertinoAlertDialog(
-                        title: const Text('提示'),
-                        content: const Text('设置功能待实现'),
-                        actions: [
-                          CupertinoDialogAction(
-                            child: const Text('确定'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                    Navigator.of(context, rootNavigator: true).push(
+                      CupertinoPageRoute(
+                        builder: (context) => FocusSettingsScreen(todo: todo),
                       ),
                     );
                   },
@@ -232,17 +234,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     });
                   },
                   onSettings: () {
-                    showCupertinoDialog(
-                      context: context,
-                      builder: (context) => CupertinoAlertDialog(
-                        title: const Text('提示'),
-                        content: const Text('设置功能待实现'),
-                        actions: [
-                          CupertinoDialogAction(
-                            child: const Text('确定'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                    Navigator.of(context, rootNavigator: true).push(
+                      CupertinoPageRoute(
+                        builder: (context) => FocusSettingsScreen(todo: todo),
                       ),
                     );
                   },
@@ -284,68 +278,76 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
 
             // 待办事项
-            _buildSectionHeader(
-              '待办事项',
-              CupertinoIcons.check_mark_circled,
-              Colors.purple,
-            ),
+            _buildSectionHeader('待办事项', CupertinoIcons.circle, Colors.purple),
             const SizedBox(height: 8),
-            if (_todos.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '已完成 $_completedCount / ${_todos.length}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
-            if (_todos.isEmpty)
+            if (_getPendingTodos().isEmpty)
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
                   child: Text(
                     '暂无待办事项',
-                    style: TextStyle(color: CupertinoColors.systemGrey),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey,
+                      decoration: TextDecoration.none,
+                    ),
                   ),
                 ),
               )
             else
-              ..._todos.asMap().entries.map((entry) {
+              ..._getPendingTodos().map((todo) {
+                final index = _todos.indexOf(todo);
                 return TodoItem(
-                  todo: entry.value,
-                  onToggle: () => _toggleTodo(entry.key),
-                  onDelete: () => _deleteTodo(entry.key),
+                  todo: todo,
+                  onToggle: () => _toggleTodo(index),
+                  onDelete: () => _deleteTodo(index),
                   onSettings: () {
-                    showCupertinoDialog(
-                      context: context,
-                      builder: (context) => CupertinoAlertDialog(
-                        title: const Text('提示'),
-                        content: const Text('设置功能待实现'),
-                        actions: [
-                          CupertinoDialogAction(
-                            child: const Text('确定'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                    Navigator.of(context, rootNavigator: true).push(
+                      CupertinoPageRoute(
+                        builder: (context) => FocusSettingsScreen(todo: todo),
                       ),
                     );
                   },
-                  onTap: () => _navigateToMindMap(entry.value),
+                  onTap: () => _navigateToMindMap(todo),
                 );
               }),
+            const SizedBox(height: 16),
+
+            // 已完成事项
+            if (_getCompletedTodos().isNotEmpty) ...[
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showCompleted = !_showCompleted;
+                  });
+                },
+                child: _buildCompletedHeader(),
+              ),
+              const SizedBox(height: 8),
+              if (_showCompleted)
+                ..._getCompletedTodos().map((todo) {
+                  final index = _todos.indexOf(todo);
+                  return TodoItem(
+                    todo: todo,
+                    onToggle: () => _toggleTodo(index),
+                    onDelete: () => _deleteTodo(index),
+                    onSettings: () {
+                      Navigator.of(context, rootNavigator: true).push(
+                        CupertinoPageRoute(
+                          builder: (context) => FocusSettingsScreen(todo: todo),
+                        ),
+                      );
+                    },
+                    onTap: () => _navigateToMindMap(todo),
+                  );
+                }),
+              const SizedBox(height: 16),
+            ],
+
             const SizedBox(height: 80),
           ],
         ),
@@ -364,9 +366,65 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: color,
+            decoration: TextDecoration.none,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCompletedHeader() {
+    final completedCount = _getCompletedTodos().length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemGrey6,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            CupertinoIcons.checkmark_circle_fill,
+            color: CupertinoColors.systemGreen,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            '已完成',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.label,
+              decoration: TextDecoration.none,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey5,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$completedCount',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: CupertinoColors.secondaryLabel,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          const Spacer(),
+          Icon(
+            _showCompleted
+                ? CupertinoIcons.chevron_up
+                : CupertinoIcons.chevron_down,
+            color: CupertinoColors.systemGrey,
+            size: 18,
+          ),
+        ],
+      ),
     );
   }
 

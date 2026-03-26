@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/main_screen.dart';
 
@@ -17,6 +18,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        cupertinoOverrideTheme: const CupertinoThemeData(
+          primaryColor: Colors.blue,
+          textTheme: CupertinoTextThemeData(primaryColor: Colors.blue),
+        ),
       ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

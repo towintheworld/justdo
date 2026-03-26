@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/event.dart';
 import 'add_event_screen.dart';
 
@@ -29,7 +29,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _addEvent() async {
     final result = await Navigator.push<Event>(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => AddEventScreen(initialDate: _selectedDate),
       ),
     );
@@ -40,22 +40,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _deleteEvent(Event event) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => CupertinoAlertDialog(
         title: const Text('删除计划'),
         content: Text('确定要删除"${event.title}"吗？'),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
           ),
-          TextButton(
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             onPressed: () {
               widget.onRemoveEvent(event);
               Navigator.pop(context);
             },
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            child: const Text('删除'),
           ),
         ],
       ),
@@ -91,72 +92,104 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('日历计划'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.today),
-            tooltip: '今天',
-            onPressed: _goToToday,
-          ),
-        ],
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('日历计划'),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _goToToday,
+          child: const Text('今天'),
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _addEvent,
+          child: const Icon(CupertinoIcons.add, size: 26),
+        ),
       ),
-      body: Column(
-        children: [
-          // 月份导航
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: _previousMonth,
+      child: SafeArea(
+        child: Container(
+          color: CupertinoColors.systemGroupedBackground,
+          child: Column(
+            children: [
+              // 月份导航
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
-                Text(
-                  '${_focusedMonth.year}年${_focusedMonth.month}月',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _nextMonth,
-                ),
-              ],
-            ),
-          ),
-          // 星期标题
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: _weekDayNames.map((name) {
-                return Expanded(
-                  child: Center(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        fontWeight: name == '六' || name == '日'
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: name == '六' || name == '日' ? Colors.red : null,
+                color: CupertinoColors.systemBackground,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: _previousMonth,
+                      child: const Icon(CupertinoIcons.chevron_left, size: 20),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${_focusedMonth.year}年${_focusedMonth.month}月',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: CupertinoColors.systemBlue,
+                          decoration: TextDecoration.none,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
+                    const SizedBox(width: 24),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: _nextMonth,
+                      child: const Icon(CupertinoIcons.chevron_right, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              // 星期标题
+              Container(
+                color: CupertinoColors.systemBackground,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: _weekDayNames.map((name) {
+                    final isWeekend = name == '六' || name == '日';
+                    return Expanded(
+                      child: Center(
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isWeekend
+                                ? CupertinoColors.systemRed
+                                : CupertinoColors.secondaryLabel,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              // 日历网格
+              Container(
+                color: CupertinoColors.systemBackground,
+                child: _buildCalendarGrid(),
+              ),
+              // 当日计划列表
+              Expanded(child: _buildEventList()),
+            ],
           ),
-          // 日历网格
-          _buildCalendarGrid(),
-          const Divider(height: 1),
-          // 当日计划列表
-          Expanded(child: _buildEventList()),
-        ],
+        ),
       ),
     );
   }
@@ -214,9 +247,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               margin: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Theme.of(context).colorScheme.primary
+                    ? CupertinoColors.systemBlue
                     : isToday
-                    ? Theme.of(context).colorScheme.primaryContainer
+                    ? CupertinoColors.systemBlue.withOpacity(0.1)
                     : null,
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -226,23 +259,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Text(
                     '$day',
                     style: TextStyle(
+                      fontSize: 15,
                       color: isSelected
-                          ? Colors.white
+                          ? CupertinoColors.white
                           : isWeekend
-                          ? Colors.red
-                          : null,
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.label,
                       fontWeight: isToday || isSelected
-                          ? FontWeight.bold
+                          ? FontWeight.w600
                           : FontWeight.normal,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   if (eventsOnDay.isNotEmpty)
-                    Text(
-                      '有计划',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: isSelected ? Colors.white : Colors.orange,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? CupertinoColors.white
+                            : CupertinoColors.systemOrange,
+                        shape: BoxShape.circle,
                       ),
                     ),
                 ],
@@ -260,7 +298,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         i,
         i + 7 > dayWidgets.length ? dayWidgets.length : i + 7,
       );
-      // 补齐剩余位置
       while (rowChildren.length < 7) {
         rowChildren.add(const Expanded(child: SizedBox()));
       }
@@ -278,16 +315,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_available, size: 64, color: Colors.grey.shade400),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGrey6,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                CupertinoIcons.calendar,
+                size: 40,
+                color: CupertinoColors.systemGrey,
+              ),
+            ),
             const SizedBox(height: 16),
             Text(
               '${_selectedDate.month}月${_selectedDate.day}日 暂无计划',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: const TextStyle(
+                fontSize: 17,
+                color: CupertinoColors.secondaryLabel,
+                decoration: TextDecoration.none,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '双击日期添加计划',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            const Text(
+              '点击右上角 + 添加计划',
+              style: TextStyle(
+                fontSize: 14,
+                color: CupertinoColors.tertiaryLabel,
+                decoration: TextDecoration.none,
+              ),
             ),
           ],
         ),
@@ -295,7 +352,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(16),
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
@@ -305,114 +362,151 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildEventCard(Event event) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        onTap: () => widget.onToggleComplete(event),
-        onLongPress: () => _deleteEvent(event),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: event.color, width: 4)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                // 时间
-                SizedBox(
-                  width: 60,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${event.startTime.hour.toString().padLeft(2, '0')}:${event.startTime.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${event.endTime.hour.toString().padLeft(2, '0')}:${event.endTime.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 分隔线
-                Container(width: 1, height: 40, color: Colors.grey.shade300),
-                const SizedBox(width: 12),
-                // 内容
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          decoration: event.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: event.isCompleted ? Colors.grey : null,
-                        ),
-                      ),
-                      if (event.location.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 14,
-                                color: Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  event.location,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (event.description.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            event.description,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                // 完成状态
-                Icon(
-                  event.isCompleted
-                      ? Icons.check_circle
-                      : Icons.check_circle_outline,
-                  color: event.isCompleted ? Colors.green : Colors.grey,
-                ),
-              ],
+    return GestureDetector(
+      onTap: () => widget.onToggleComplete(event),
+      onLongPress: () => _deleteEvent(event),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // 左侧颜色条
+            Container(
+              width: 4,
+              height: 70,
+              decoration: BoxDecoration(
+                color: event.color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    // 时间
+                    SizedBox(
+                      width: 55,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${event.startTime.hour.toString().padLeft(2, '0')}:${event.startTime.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.label,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                          Text(
+                            '${event.endTime.hour.toString().padLeft(2, '0')}:${event.endTime.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: CupertinoColors.systemGrey,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 分隔线
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: CupertinoColors.separator,
+                    ),
+                    const SizedBox(width: 12),
+                    // 内容
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              decoration: event.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: event.isCompleted
+                                  ? CupertinoColors.systemGrey
+                                  : CupertinoColors.label,
+                              decorationColor: CupertinoColors.systemGrey,
+                            ),
+                          ),
+                          if (event.location.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    CupertinoIcons.location,
+                                    size: 12,
+                                    color: CupertinoColors.systemGrey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      event.location,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: CupertinoColors.systemGrey,
+                                        decoration: TextDecoration.none,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (event.description.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                event.description,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: CupertinoColors.systemGrey,
+                                  decoration: TextDecoration.none,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // 完成状态
+                    Icon(
+                      event.isCompleted
+                          ? CupertinoIcons.checkmark_circle_fill
+                          : CupertinoIcons.circle,
+                      color: event.isCompleted
+                          ? CupertinoColors.systemGreen
+                          : CupertinoColors.systemGrey3,
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

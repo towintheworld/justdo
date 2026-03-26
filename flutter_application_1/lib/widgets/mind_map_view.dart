@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/todo.dart';
 
 class MindMapView extends StatefulWidget {
@@ -198,7 +199,6 @@ class _MindMapViewState extends State<MindMapView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: parent.subtasks.asMap().entries.map((entry) {
         final subtask = entry.value;
-        final hasChildren = subtask.subtasks.isNotEmpty;
         final isFirst = entry.key == 0;
         final isLast = entry.key == parent.subtasks.length - 1;
 
@@ -207,96 +207,62 @@ class _MindMapViewState extends State<MindMapView> {
             top: isFirst ? 10 : 0,
             bottom: isLast ? 10 : 0,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 子任务节点
-              _buildSubtaskNode(subtask, parent, childColor, depth),
-              // 孙任务树枝
-              if (hasChildren && subtask.isExpanded && depth < 3) ...[
-                _buildBranchConnection(childColor, subtask.subtasks.length),
-                _buildSubtaskBranch(subtask, childColor, depth + 1),
-              ],
-            ],
-          ),
+          child: _buildSubtaskNode(subtask, parent, childColor, depth),
         );
       }).toList(),
     );
   }
 
   Widget _buildSubtaskNode(Todo subtask, Todo parent, Color color, int depth) {
-    final hasChildren = subtask.subtasks.isNotEmpty;
     final fontSize = (14 - depth * 0.5).clamp(11, 14).toDouble();
     final padding = EdgeInsets.symmetric(
       horizontal: (14 - depth * 2).clamp(8, 14).toDouble(),
       vertical: (10 - depth * 1.5).clamp(6, 10).toDouble(),
     );
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          subtask.toggleExpanded();
-        });
-      },
-      child: Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.6), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.6), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => widget.onToggleSubtask(parent, subtask),
+            child: Icon(
+              subtask.isCompleted ? Icons.check_circle : Icons.circle_outlined,
+              color: subtask.isCompleted ? Colors.green : color,
+              size: (18 - depth).clamp(14, 18).toDouble(),
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () => widget.onToggleSubtask(parent, subtask),
-              child: Icon(
-                subtask.isCompleted
-                    ? Icons.check_circle
-                    : Icons.circle_outlined,
-                color: subtask.isCompleted ? Colors.green : color,
-                size: (18 - depth).clamp(14, 18).toDouble(),
-              ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            subtask.title,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: depth == 0 ? FontWeight.w600 : FontWeight.normal,
+              decoration: subtask.isCompleted
+                  ? TextDecoration.lineThrough
+                  : null,
+              color: subtask.isCompleted ? Colors.grey : Colors.black87,
             ),
-            const SizedBox(width: 6),
-            Text(
-              subtask.title,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: depth == 0 ? FontWeight.w600 : FontWeight.normal,
-                decoration: subtask.isCompleted
-                    ? TextDecoration.lineThrough
-                    : null,
-                color: subtask.isCompleted ? Colors.grey : Colors.black87,
-              ),
-            ),
-            if (hasChildren) ...[
-              const SizedBox(width: 4),
-              Icon(
-                subtask.isExpanded ? Icons.chevron_right : Icons.expand_more,
-                color: color,
-                size: 16,
-              ),
-            ],
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: () => _showAddSubtaskDialogForSubtask(parent, subtask),
-              child: Icon(Icons.add_circle_outline, color: color, size: 16),
-            ),
-            const SizedBox(width: 2),
-            GestureDetector(
-              onTap: () => widget.onDeleteSubtask(parent, subtask),
-              child: const Icon(Icons.close, color: Colors.red, size: 16),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 2),
+          GestureDetector(
+            onTap: () => widget.onDeleteSubtask(parent, subtask),
+            child: const Icon(Icons.close, color: Colors.red, size: 16),
+          ),
+        ],
       ),
     );
   }
@@ -319,99 +285,127 @@ class _MindMapViewState extends State<MindMapView> {
   }
 
   void _showAddSubtaskDialog(Todo parent) {
-    final controller = TextEditingController();
+    // 检查是否可以添加子任务
+    if (!parent.canAddSubtask) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('合理分配任务，充分利用时间'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final titleController = TextEditingController();
+    final durationController = TextEditingController();
+    DateTime? selectedStartTime;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('添加子任务'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '输入子任务名称',
-            border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('添加子任务'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoTextField(
+                  controller: titleController,
+                  placeholder: '子任务名称',
+                  autofocus: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CupertinoTextField(
+                  controller: durationController,
+                  placeholder: '时长（分钟）',
+                  keyboardType: TextInputType.number,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (parent.startTime != null && parent.endTime != null) ...[
+                  Text(
+                    '父任务时间范围：${parent.startTime!.year}-${parent.startTime!.month.toString().padLeft(2, '0')}-${parent.startTime!.day.toString().padLeft(2, '0')} ${parent.startTime!.hour.toString().padLeft(2, '0')}:${parent.startTime!.minute.toString().padLeft(2, '0')} - ${parent.endTime!.year}-${parent.endTime!.month.toString().padLeft(2, '0')}-${parent.endTime!.day.toString().padLeft(2, '0')} ${parent.endTime!.hour.toString().padLeft(2, '0')}:${parent.endTime!.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: parent.startTime!,
+                        firstDate: parent.startTime!,
+                        lastDate: parent.endTime!,
+                      );
+                      if (picked != null && context.mounted) {
+                        final TimeOfDay? timePicked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(
+                            parent.startTime!,
+                          ),
+                        );
+                        if (timePicked != null) {
+                          setDialogState(() {
+                            selectedStartTime = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              timePicked.hour,
+                              timePicked.minute,
+                            );
+                          });
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.access_time),
+                    label: Text(
+                      selectedStartTime != null
+                          ? '${selectedStartTime!.year}-${selectedStartTime!.month.toString().padLeft(2, '0')}-${selectedStartTime!.day.toString().padLeft(2, '0')} ${selectedStartTime!.hour.toString().padLeft(2, '0')}:${selectedStartTime!.minute.toString().padLeft(2, '0')}'
+                          : '选择开始时间',
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              final subtask = Todo(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                title: value.trim(),
-              );
-              widget.onAddSubtask(parent, subtask);
-              Navigator.pop(context);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                final subtask = Todo(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: controller.text.trim(),
-                );
-                widget.onAddSubtask(parent, subtask);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('添加'),
-          ),
-        ],
-      ),
-    ).then((_) => controller.dispose());
-  }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isNotEmpty) {
+                  int duration = int.tryParse(durationController.text) ?? 0;
+                  int priority = Todo.calculatePriorityFromDuration(duration);
 
-  void _showAddSubtaskDialogForSubtask(Todo rootParent, Todo directParent) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('添加子任务'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '输入子任务名称',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              final subtask = Todo(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                title: value.trim(),
-              );
-              widget.onAddSubtask(directParent, subtask);
-              Navigator.pop(context);
-            }
-          },
+                  final subtask = Todo(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    title: titleController.text.trim(),
+                    startTime: selectedStartTime,
+                    duration: duration,
+                    priority: priority,
+                  );
+                  parent.addSubtask(subtask);
+                  parent.sortSubtasksByPriority();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('添加'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                final subtask = Todo(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: controller.text.trim(),
-                );
-                widget.onAddSubtask(directParent, subtask);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('添加'),
-          ),
-        ],
       ),
-    ).then((_) => controller.dispose());
+    ).then((_) {
+      titleController.dispose();
+      durationController.dispose();
+    });
   }
 }
 
