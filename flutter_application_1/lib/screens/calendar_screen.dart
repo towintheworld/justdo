@@ -95,15 +95,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('日历计划'),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _goToToday,
-          child: const Text('今天'),
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _addEvent,
-          child: const Icon(CupertinoIcons.add, size: 26),
+        leading: Navigator.canPop(context)
+            ? CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.pop(context),
+                child: const Icon(CupertinoIcons.back, size: 22),
+              )
+            : CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _goToToday,
+                child: const Text('今天'),
+              ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (Navigator.canPop(context))
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _goToToday,
+                child: const Text('今天'),
+              ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _addEvent,
+              child: const Icon(CupertinoIcons.add, size: 26),
+            ),
+          ],
         ),
       ),
       child: SafeArea(

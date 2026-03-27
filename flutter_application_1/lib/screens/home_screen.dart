@@ -3,16 +3,25 @@ import 'package:flutter/cupertino.dart';
 import '../models/todo.dart';
 import '../models/course.dart';
 import '../models/event.dart';
+import '../models/schedule_settings.dart';
 import '../widgets/todo_item.dart';
 import 'add_todo_screen.dart';
 import 'todo_mind_map_screen.dart';
 import 'focus_settings_screen.dart';
+import 'schedule_screen.dart';
+import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<Course> courses;
   final List<Event> events;
   final int currentWeek;
   final Function(Event) onEventComplete;
+  final ScheduleSettings settings;
+  final VoidCallback? onSettingsPressed;
+  final Function(Course) onAddCourse;
+  final Function(Course) onRemoveCourse;
+  final Function(Event) onAddEvent;
+  final Function(Event) onRemoveEvent;
 
   const HomeScreen({
     super.key,
@@ -20,6 +29,12 @@ class HomeScreen extends StatefulWidget {
     required this.events,
     required this.currentWeek,
     required this.onEventComplete,
+    required this.settings,
+    this.onSettingsPressed,
+    required this.onAddCourse,
+    required this.onRemoveCourse,
+    required this.onAddEvent,
+    required this.onRemoveEvent,
   });
 
   @override
@@ -173,9 +188,56 @@ class _HomeScreenState extends State<HomeScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('待办事项'),
-        trailing: GestureDetector(
-          onTap: _addTodo,
-          child: const Icon(CupertinoIcons.add),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => CalendarScreen(
+                      events: widget.events,
+                      onAddEvent: widget.onAddEvent,
+                      onRemoveEvent: widget.onRemoveEvent,
+                      onToggleComplete: widget.onEventComplete,
+                    ),
+                  ),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(CupertinoIcons.calendar, size: 22),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => ScheduleScreen(
+                      settings: widget.settings,
+                      onSettingsPressed: widget.onSettingsPressed,
+                      courses: widget.courses,
+                      onAddCourse: widget.onAddCourse,
+                      onRemoveCourse: widget.onRemoveCourse,
+                    ),
+                  ),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(CupertinoIcons.book, size: 22),
+              ),
+            ),
+            GestureDetector(
+              onTap: _addTodo,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(CupertinoIcons.add, size: 22),
+              ),
+            ),
+          ],
         ),
       ),
       child: SafeArea(

@@ -20,7 +20,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         cupertinoOverrideTheme: const CupertinoThemeData(
           primaryColor: Colors.blue,
-          textTheme: CupertinoTextThemeData(primaryColor: Colors.blue),
         ),
       ),
       localizationsDelegates: const [

@@ -122,6 +122,12 @@ class _MainScreenState extends State<MainScreen> {
                 events: _events,
                 currentWeek: 1,
                 onEventComplete: _toggleEventComplete,
+                settings: _settings,
+                onSettingsPressed: _openSettings,
+                onAddCourse: _addCourse,
+                onRemoveCourse: _removeCourse,
+                onAddEvent: _addEvent,
+                onRemoveEvent: _removeEvent,
               ),
             );
           case 1:
@@ -154,6 +160,12 @@ class _MainScreenState extends State<MainScreen> {
                 events: _events,
                 currentWeek: 1,
                 onEventComplete: _toggleEventComplete,
+                settings: _settings,
+                onSettingsPressed: _openSettings,
+                onAddCourse: _addCourse,
+                onRemoveCourse: _removeCourse,
+                onAddEvent: _addEvent,
+                onRemoveEvent: _removeEvent,
               ),
             );
         }

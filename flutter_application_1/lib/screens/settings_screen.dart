@@ -120,22 +120,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       CupertinoListTile(
                         title: const Text('开始时间'),
-                        additionalInfo: CupertinoTextField(
-                          controller: startController,
-                          placeholder: '08:00',
-                          textAlign: TextAlign.end,
-                          decoration: null,
-                          style: const TextStyle(fontSize: 16),
+                        trailing: SizedBox(
+                          width: 120,
+                          child: CupertinoTextField(
+                            controller: startController,
+                            placeholder: '08:00',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 16),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemGrey6,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
                         ),
                       ),
                       CupertinoListTile(
                         title: const Text('结束时间'),
-                        additionalInfo: CupertinoTextField(
-                          controller: endController,
-                          placeholder: '08:45',
-                          textAlign: TextAlign.end,
-                          decoration: null,
-                          style: const TextStyle(fontSize: 16),
+                        trailing: SizedBox(
+                          width: 120,
+                          child: CupertinoTextField(
+                            controller: endController,
+                            placeholder: '08:45',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 16),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemGrey6,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
                         ),
                       ),
                     ],

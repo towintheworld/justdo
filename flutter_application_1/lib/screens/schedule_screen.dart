@@ -145,11 +145,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('我的课表'),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: widget.onSettingsPressed,
-          child: const Icon(CupertinoIcons.gear, size: 22),
-        ),
+        leading: Navigator.canPop(context)
+            ? CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.pop(context),
+                child: const Icon(CupertinoIcons.back, size: 22),
+              )
+            : CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: widget.onSettingsPressed,
+                child: const Icon(CupertinoIcons.gear, size: 22),
+              ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
